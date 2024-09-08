@@ -1,4 +1,4 @@
-FROM golang:1.22.5-alpine3.18@sha256:1b531882ad8f3eae11ec2323803207acbde6408e030d91b8e159e2d72c1da1a1 AS builder
+FROM golang:1.22.5-alpine3.20@sha256:0d3653dd6f35159ec6e3d10263a42372f6f194c3dea0b35235d72aabde86486e AS builder
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
@@ -12,7 +12,7 @@ COPY . .
 
 RUN go build -o ${APP_NAME} ./app/main.go
 
-FROM alpine:3.18.3@sha256:c5c5fda71656f28e49ac9c5416b3643eaa6a108a8093151d6d1afc9463be8e33
+FROM alpine:3.20.3@sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d
 
 WORKDIR /root
 
