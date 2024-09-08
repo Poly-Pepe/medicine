@@ -3,6 +3,7 @@ package front
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -73,17 +74,17 @@ func (e *Examination) GetAddMedicinePage(c *fiber.Ctx) error {
 func (e *Examination) GetAddExaminationPage(c *fiber.Ctx) error {
 	doctors, err := e.ExaminationUseCase.ListDoctors(c.Context())
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении данных")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении данных")
 	}
 
 	patients, err := e.ExaminationUseCase.ListPatients(c.Context())
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении данных")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении данных")
 	}
 
 	medicines, err := e.ExaminationUseCase.ListMedicines(c.Context())
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении данных")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении данных")
 	}
 
 	return c.Render("add_examination", fiber.Map{
@@ -100,7 +101,7 @@ func (e *Examination) PostAddDoctor(c *fiber.Ctx) error {
 
 	err := e.ExaminationUseCase.AddDoctor(context.Background(), &doctor)
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при добавлении врача")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при добавлении врача")
 	}
 
 	return c.SendString("Доктор успешно добавлен!")
@@ -116,7 +117,7 @@ func (e *Examination) PostAddPatient(c *fiber.Ctx) error {
 
 	err := e.ExaminationUseCase.AddPatient(context.Background(), &patient)
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при добавлении пациента")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при добавлении пациента")
 	}
 
 	return c.SendString("Пациент успешно добавлен!")
@@ -132,7 +133,7 @@ func (e *Examination) PostAddMedicine(c *fiber.Ctx) error {
 
 	err := e.ExaminationUseCase.AddMedicine(context.Background(), &medicine)
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при добавлении лекарства")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при добавлении лекарства")
 	}
 
 	return c.SendString("Лекарство успешно добавлено!")
@@ -141,12 +142,12 @@ func (e *Examination) PostAddMedicine(c *fiber.Ctx) error {
 func (e *Examination) PostAddExamination(c *fiber.Ctx) error {
 	docID, err := strconv.Atoi(c.FormValue("doctor_id"))
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении ID врача")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении ID врача")
 	}
 
 	patID, err := strconv.Atoi(c.FormValue("patient_id"))
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении ID пациента")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении ID пациента")
 	}
 
 	exam := domain.Examination{
@@ -161,7 +162,7 @@ func (e *Examination) PostAddExamination(c *fiber.Ctx) error {
 
 	err = e.ExaminationUseCase.AddExamination(context.Background(), &exam)
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при добавлении осмотра")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при добавлении осмотра")
 	}
 
 	formData := c.Request().PostArgs()
@@ -197,7 +198,7 @@ func (e *Examination) PostAddExamination(c *fiber.Ctx) error {
 	}
 
 	if len(errorsStr) > 0 {
-		return c.Status(500).SendString(errorsStr)
+		return c.Status(http.StatusInternalServerError).SendString(errorsStr)
 	}
 
 	return c.SendString("Осмотр успешно добавлен!")
@@ -206,12 +207,12 @@ func (e *Examination) PostAddExamination(c *fiber.Ctx) error {
 func (e *Examination) GetMedicineSideEffects(c *fiber.Ctx) error {
 	medicineID, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении ID лекарства")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении ID лекарства")
 	}
 
 	sideEffects, err := e.ExaminationUseCase.GetMedicineSideEffects(context.Background(), medicineID)
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении побочных эффектов")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении побочных эффектов")
 	}
 
 	return c.Render("medicine_side_effects", fiber.Map{
@@ -222,12 +223,12 @@ func (e *Examination) GetMedicineSideEffects(c *fiber.Ctx) error {
 func (e *Examination) GetCountExaminationsByDate(c *fiber.Ctx) error {
 	date, err := time.Parse("2006-01-02", c.Params("date"))
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении даты")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении даты")
 	}
 
 	count, err := e.ExaminationUseCase.GetCountExaminationByDate(context.Background(), date)
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении данных")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении данных")
 	}
 
 	return c.Render("count_examinations_by_date", fiber.Map{
@@ -241,12 +242,12 @@ func (e *Examination) GetCountExaminationsByDiagnosis(c *fiber.Ctx) error {
 
 	decodedDiagnosis, err := url.QueryUnescape(diagnosis)
 	if err != nil {
-		return c.Status(400).SendString("Ошибка при декодировании параметра")
+		return c.Status(http.StatusBadRequest).SendString("Ошибка при декодировании параметра")
 	}
 
 	count, err := e.ExaminationUseCase.GetCountExaminationByDiagnosis(context.Background(), decodedDiagnosis)
 	if err != nil {
-		return c.Status(500).SendString("Ошибка при получении данных")
+		return c.Status(http.StatusInternalServerError).SendString("Ошибка при получении данных")
 	}
 
 	return c.Render("count_examinations_by_diagnosis", fiber.Map{

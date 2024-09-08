@@ -129,6 +129,7 @@ func (r *Examination) GetMedicineSideEffects(ctx context.Context, medicineID int
 	defer conn.Release()
 
 	var sideEffects string
+
 	err = conn.QueryRow(ctx, sqlGetMedicineSideEffects, medicineID).Scan(&sideEffects)
 	if err != nil {
 		return "", err
@@ -138,8 +139,6 @@ func (r *Examination) GetMedicineSideEffects(ctx context.Context, medicineID int
 }
 
 func (r *Examination) GetCountExaminationByDate(ctx context.Context, date time.Time) (int, error) {
-	// todo: validate date
-
 	conn, err := r.pool.Acquire(ctx)
 	if err != nil {
 		return 0, err
@@ -148,6 +147,7 @@ func (r *Examination) GetCountExaminationByDate(ctx context.Context, date time.T
 	defer conn.Release()
 
 	var count int
+
 	err = conn.QueryRow(ctx, sqlGetCountExaminationByDate, date).Scan(&count)
 	if err != nil {
 		return 0, err
@@ -169,6 +169,7 @@ func (r *Examination) GetCountExaminationByDiagnosis(ctx context.Context, diagno
 	defer conn.Release()
 
 	var count int
+
 	err = conn.QueryRow(ctx, sqlGetCountExaminationByDiagnosis, diagnosis).Scan(&count)
 	if err != nil {
 		return 0, err
@@ -257,7 +258,13 @@ func (r *Examination) ListMedicines(ctx context.Context) ([]*domain.Medicine, er
 	for rows.Next() {
 		var medicine domain.Medicine
 
-		err = rows.Scan(&medicine.ID, &medicine.Name, &medicine.MethodOfAdministration, &medicine.Description, &medicine.SideEffects)
+		err = rows.Scan(
+			&medicine.ID,
+			&medicine.Name,
+			&medicine.MethodOfAdministration,
+			&medicine.Description,
+			&medicine.SideEffects,
+		)
 		if err != nil {
 			return nil, err
 		}

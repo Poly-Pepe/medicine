@@ -27,6 +27,7 @@ func initLogger(logLevel string) error {
 			return fmt.Sprintf("%s:%d", frame.Function, frame.Line), ""
 		},
 	})
+
 	return nil
 }
 
