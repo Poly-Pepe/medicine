@@ -68,7 +68,7 @@ jobs:
         run: |
           trivy fs --exit-code 1 --severity CRITICAL,HIGH,MEDIUM --no-progress .
 
-#      - name: Scan Docker image for vulnerabilities (optional)
-#        run: |
-#          docker build -t your-image-name .
-#          trivy image --exit-code 1 --severity CRITICAL,HIGH your-image-name
+      - name: Scan Docker image for vulnerabilities (optional)
+        run: |
+          docker build -t ./ci/dockerfiles/api .
+          trivy image --exit-code 1 --severity CRITICAL,HIGH your-image-name
