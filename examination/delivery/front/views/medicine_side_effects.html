@@ -2,72 +2,174 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Побочные эффекты лекарства</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-
-        h1 {
-            color: #444;
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-
-        form {
-            background-color: #fff;
-            padding: 20px;
+        /* Общие стили для кнопки "Назад" */
+        .back-btn {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 20px;
+            border: none;
             border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            margin: 0 auto;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            display: block;
+            width: 100px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .back-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        /* Уже существующие стили */
+        form {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: auto;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h3 {
+            margin-bottom: 10px;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             font-weight: bold;
         }
 
         input[type="text"],
         input[type="date"],
-        input[type="number"],
-        textarea,
-        select {
+        select,
+        textarea {
             width: 100%;
             padding: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
             border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        input[type="submit"] {
-            background-color: #5cb85c;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
             font-size: 16px;
         }
 
-        input[type="submit"]:hover {
-            background-color: #4cae4c;
+        .medicine-selection {
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
         }
 
-        p {
-            font-size: 18px;
-            color: #666;
+        .medicine-selection select {
+            height: 40px;
+            font-size: 16px;
+        }
+
+        .add-medicine-btn {
+            height: 40px;
+            padding: 0 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-medicine-btn:hover {
+            background-color: #45a049;
+        }
+
+        #medicines_list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        #medicines_list li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+            padding-right: 10px;
+        }
+
+        #medicines_list li span {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        #medicines_list li .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        #medicines_list li button {
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .remove-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .remove-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        .side-effects-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .side-effects-btn:hover {
+            background-color: #1976D2;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        h1, h3, p {
+            text-align: center;
+        }
+
+        #selected_medicines {
+            width: 100%;
         }
     </style>
 </head>
 <body>
 <h1>Побочные эффекты лекарства</h1>
 <p>Побочные эффекты: {{.SideEffects}}</p>
+<button class="back-btn" onclick="goBack()">Назад</button>
+<script>
+    function goBack() {
+        window.history.back();
+    }
+</script>
 </body>
 </html>

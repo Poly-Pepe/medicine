@@ -2,6 +2,8 @@ package front
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -69,7 +71,26 @@ func (e *Examination) GetAddMedicinePage(c *fiber.Ctx) error {
 }
 
 func (e *Examination) GetAddExaminationPage(c *fiber.Ctx) error {
-	return c.Render("add_examination", nil)
+	doctors, err := e.ExaminationUseCase.ListDoctors(c.Context())
+	if err != nil {
+		return c.Status(500).SendString("Ошибка при получении данных")
+	}
+
+	patients, err := e.ExaminationUseCase.ListPatients(c.Context())
+	if err != nil {
+		return c.Status(500).SendString("Ошибка при получении данных")
+	}
+
+	medicines, err := e.ExaminationUseCase.ListMedicines(c.Context())
+	if err != nil {
+		return c.Status(500).SendString("Ошибка при получении данных")
+	}
+
+	return c.Render("add_examination", fiber.Map{
+		"Doctors":   doctors,
+		"Patients":  patients,
+		"Medicines": medicines,
+	})
 }
 
 func (e *Examination) PostAddDoctor(c *fiber.Ctx) error {
@@ -143,6 +164,42 @@ func (e *Examination) PostAddExamination(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Ошибка при добавлении осмотра")
 	}
 
+	formData := c.Request().PostArgs()
+	var medicines []string
+
+	// Проходим по всем аргументам формы и ищем 'medicines[]'
+	formData.VisitAll(func(key, value []byte) {
+		if string(key) == "medicines[]" {
+			medicines = append(medicines, string(value))
+		}
+	})
+
+	var errorsStr string
+
+	for _, med := range medicines {
+		val, err := strconv.Atoi(med)
+		if err != nil {
+			log.Errorf("ошибка при получении ID лекарства: %v", err)
+
+			errorsStr += fmt.Sprintf("ошибка при получении ID лекарства: %v\n", err)
+
+			continue
+		}
+
+		err = e.ExaminationUseCase.AddPrescription(context.Background(), exam.PatientID, val)
+		if err != nil {
+			log.Errorf("ошибка при добавлении лекарства: %v", err)
+
+			errorsStr += fmt.Sprintf("ошибка при добавлении лекарства: %v\n", err)
+
+			continue
+		}
+	}
+
+	if len(errorsStr) > 0 {
+		return c.Status(500).SendString(errorsStr)
+	}
+
 	return c.SendString("Осмотр успешно добавлен!")
 }
 
@@ -157,7 +214,9 @@ func (e *Examination) GetMedicineSideEffects(c *fiber.Ctx) error {
 		return c.Status(500).SendString("Ошибка при получении побочных эффектов")
 	}
 
-	return c.Render("medicine_side_effects", sideEffects)
+	return c.Render("medicine_side_effects", fiber.Map{
+		"SideEffects": sideEffects,
+	})
 }
 
 func (e *Examination) GetCountExaminationsByDate(c *fiber.Ctx) error {
@@ -172,7 +231,7 @@ func (e *Examination) GetCountExaminationsByDate(c *fiber.Ctx) error {
 	}
 
 	return c.Render("count_examinations_by_date", fiber.Map{
-		"Date":  date,
+		"Date":  date.Format(time.DateOnly),
 		"Count": count,
 	})
 }
@@ -180,13 +239,18 @@ func (e *Examination) GetCountExaminationsByDate(c *fiber.Ctx) error {
 func (e *Examination) GetCountExaminationsByDiagnosis(c *fiber.Ctx) error {
 	diagnosis := c.Params("diagnosis")
 
-	count, err := e.ExaminationUseCase.GetCountExaminationByDiagnosis(context.Background(), diagnosis)
+	decodedDiagnosis, err := url.QueryUnescape(diagnosis)
+	if err != nil {
+		return c.Status(400).SendString("Ошибка при декодировании параметра")
+	}
+
+	count, err := e.ExaminationUseCase.GetCountExaminationByDiagnosis(context.Background(), decodedDiagnosis)
 	if err != nil {
 		return c.Status(500).SendString("Ошибка при получении данных")
 	}
 
 	return c.Render("count_examinations_by_diagnosis", fiber.Map{
-		"Diagnosis": diagnosis,
+		"Diagnosis": decodedDiagnosis,
 		"Count":     count,
 	})
 }

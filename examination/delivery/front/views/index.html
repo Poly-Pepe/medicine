@@ -103,15 +103,8 @@
         <a href="/add-examination" class="btn">Добавить осмотр</a>
     </div>
 
-    <form action="/medicine-side-effects" method="GET" onsubmit="event.preventDefault(); redirectToMedicineSideEffects();">
-        <div class="form-group">
-            <label for="medicine_id">Введите ID лекарства:</label>
-            <input type="number" id="medicine_id" name="id" required>
-        </div>
-        <button type="submit" class="btn btn-show">Показать побочные эффекты</button>
-    </form>
-
-    <form action="/count-examinations-by-date" method="GET" onsubmit="event.preventDefault(); redirectToExaminationsByDate();">
+    <form action="/count-examinations-by-date" method="GET"
+          onsubmit="event.preventDefault(); redirectToExaminationsByDate();">
         <div class="form-group">
             <label for="date">Введите дату (YYYY-MM-DD):</label>
             <input type="date" id="date" name="date" required>
@@ -119,7 +112,8 @@
         <button type="submit" class="btn btn-show">Показать количество осмотров</button>
     </form>
 
-    <form action="/count-examinations-by-diagnosis" method="GET" onsubmit="event.preventDefault(); redirectToExaminationsByDiagnosis();">
+    <form action="/count-examinations-by-diagnosis" method="GET"
+          onsubmit="event.preventDefault(); redirectToExaminationsByDiagnosis();">
         <div class="form-group">
             <label for="diagnosis">Введите диагноз:</label>
             <input type="text" id="diagnosis" name="diagnosis" required>
@@ -129,11 +123,6 @@
 </div>
 
 <script>
-    function redirectToMedicineSideEffects() {
-        const medicineId = document.getElementById('medicine_id').value;
-        window.location.href = `/medicine-side-effects/${medicineId}`;
-    }
-
     function redirectToExaminationsByDate() {
         const date = document.getElementById('date').value;
         window.location.href = `/count-examinations-by-date/${date}`;

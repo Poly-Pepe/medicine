@@ -1,5 +1,7 @@
 package domain
 
+import "context"
+
 type Prescription struct {
 	ID            int
 	ExaminationID int
@@ -7,5 +9,5 @@ type Prescription struct {
 }
 
 type PrescriptionRepository interface {
-	AddPrescription(examinationID int, medicineID int) error
+	AddPrescription(ctx context.Context, examinationID int, medicineID int) error
 }

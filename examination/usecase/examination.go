@@ -84,3 +84,19 @@ func (e *Examination) GetCountExaminationByDiagnosis(ctx context.Context, diagno
 
 	return e.ExaminationRepo.GetCountExaminationByDiagnosis(ctx, diagnosis)
 }
+
+func (e *Examination) ListDoctors(ctx context.Context) ([]*domain.Doctor, error) {
+	return e.ExaminationRepo.ListDoctors(ctx)
+}
+
+func (e *Examination) ListPatients(ctx context.Context) ([]*domain.Patient, error) {
+	return e.ExaminationRepo.ListPatients(ctx)
+}
+
+func (e *Examination) ListMedicines(ctx context.Context) ([]*domain.Medicine, error) {
+	return e.ExaminationRepo.ListMedicines(ctx)
+}
+
+func (e *Examination) AddPrescription(ctx context.Context, examinationID int, medicineID int) error {
+	return e.PrescriptionRepo.AddPrescription(ctx, examinationID, medicineID)
+}

@@ -176,3 +176,94 @@ func (r *Examination) GetCountExaminationByDiagnosis(ctx context.Context, diagno
 
 	return count, nil
 }
+
+func (r *Examination) ListDoctors(ctx context.Context) ([]*domain.Doctor, error) {
+	conn, err := r.pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	var doctors []*domain.Doctor
+
+	rows, err := conn.Query(ctx, sqlListDoctors)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var doc domain.Doctor
+
+		err = rows.Scan(&doc.ID, &doc.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		doctors = append(doctors, &doc)
+	}
+
+	return doctors, nil
+}
+func (r *Examination) ListPatients(ctx context.Context) ([]*domain.Patient, error) {
+	conn, err := r.pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	var patients []*domain.Patient
+
+	rows, err := conn.Query(ctx, sqlListPatients)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var patient domain.Patient
+
+		err = rows.Scan(&patient.ID, &patient.Name, &patient.Gender, &patient.BirthDate, &patient.Address)
+		if err != nil {
+			return nil, err
+		}
+
+		patients = append(patients, &patient)
+	}
+
+	return patients, nil
+}
+func (r *Examination) ListMedicines(ctx context.Context) ([]*domain.Medicine, error) {
+	conn, err := r.pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Release()
+
+	var medicines []*domain.Medicine
+
+	rows, err := conn.Query(ctx, sqlListMedicines)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var medicine domain.Medicine
+
+		err = rows.Scan(&medicine.ID, &medicine.Name, &medicine.MethodOfAdministration, &medicine.Description, &medicine.SideEffects)
+		if err != nil {
+			return nil, err
+		}
+
+		medicines = append(medicines, &medicine)
+	}
+
+	return medicines, nil
+}
