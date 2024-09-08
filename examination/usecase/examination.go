@@ -56,9 +56,9 @@ func (e *Examination) AddMedicine(ctx context.Context, med *domain.Medicine) err
 	return e.ExaminationRepo.AddMedicine(ctx, med)
 }
 
-func (e *Examination) AddExamination(ctx context.Context, exam *domain.Examination) error {
+func (e *Examination) AddExamination(ctx context.Context, exam *domain.Examination) (int, error) {
 	if exam == nil {
-		return errExaminationCannotBeNil
+		return 0, errExaminationCannotBeNil
 	}
 
 	return e.ExaminationRepo.AddExamination(ctx, exam)

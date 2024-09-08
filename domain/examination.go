@@ -41,7 +41,7 @@ type ExaminationUseCase interface {
 	AddDoctor(ctx context.Context, doc *Doctor) error
 	AddPatient(ctx context.Context, patient *Patient) error
 	AddMedicine(ctx context.Context, med *Medicine) error
-	AddExamination(ctx context.Context, exam *Examination) error
+	AddExamination(ctx context.Context, exam *Examination) (int, error)
 
 	ListDoctors(ctx context.Context) ([]*Doctor, error)
 	ListPatients(ctx context.Context) ([]*Patient, error)
@@ -58,7 +58,7 @@ type ExaminationRepository interface {
 	AddDoctor(ctx context.Context, doc *Doctor) error
 	AddPatient(ctx context.Context, patient *Patient) error
 	AddMedicine(ctx context.Context, med *Medicine) error
-	AddExamination(ctx context.Context, exam *Examination) error
+	AddExamination(ctx context.Context, exam *Examination) (int, error)
 
 	ListDoctors(ctx context.Context) ([]*Doctor, error)
 	ListPatients(ctx context.Context) ([]*Patient, error)

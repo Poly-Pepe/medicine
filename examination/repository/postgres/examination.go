@@ -86,19 +86,20 @@ func (r *Examination) AddMedicine(ctx context.Context, med *domain.Medicine) err
 	return nil
 }
 
-func (r *Examination) AddExamination(ctx context.Context, exam *domain.Examination) error {
+func (r *Examination) AddExamination(ctx context.Context, exam *domain.Examination) (int, error) {
 	if exam == nil {
-		return errExaminationCannotBeNil
+		return 0, errExaminationCannotBeNil
 	}
 
 	conn, err := r.pool.Acquire(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	defer conn.Release()
 
-	_, err = conn.Exec(
+	var id int
+	row := conn.QueryRow(
 		ctx,
 		sqlAddExamination,
 		exam.PatientID,
@@ -109,11 +110,13 @@ func (r *Examination) AddExamination(ctx context.Context, exam *domain.Examinati
 		exam.Diagnosis,
 		exam.Prescriptions,
 	)
+
+	err = row.Scan(&id)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return id, nil
 }
 
 func (r *Examination) GetMedicineSideEffects(ctx context.Context, medicineID int) (string, error) {

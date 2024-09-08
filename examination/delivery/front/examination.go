@@ -160,7 +160,7 @@ func (e *Examination) PostAddExamination(c *fiber.Ctx) error {
 		Prescriptions:    c.FormValue("prescriptions"),
 	}
 
-	err = e.ExaminationUseCase.AddExamination(context.Background(), &exam)
+	examinationID, err := e.ExaminationUseCase.AddExamination(context.Background(), &exam)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString("Ошибка при добавлении осмотра")
 	}
@@ -187,7 +187,7 @@ func (e *Examination) PostAddExamination(c *fiber.Ctx) error {
 			continue
 		}
 
-		err = e.ExaminationUseCase.AddPrescription(context.Background(), exam.PatientID, val)
+		err = e.ExaminationUseCase.AddPrescription(context.Background(), examinationID, val)
 		if err != nil {
 			log.Errorf("ошибка при добавлении лекарства: %v", err)
 
