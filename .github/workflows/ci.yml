@@ -71,4 +71,4 @@ jobs:
       - name: Scan Docker image for vulnerabilities (optional)
         run: |
           docker build --build-arg APP_NAME=medicine -f ./ci/dockerfiles/api -t trivy-go-app .
-          trivy image --exit-code 1 --severity CRITICAL,HIGH your-image-name
+          trivy image --exit-code 1 --severity CRITICAL,HIGH trivy-go-app
