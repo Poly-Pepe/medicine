@@ -44,7 +44,6 @@ jobs:
         run: |
           golangci-lint run ./... -v --config .golangci.yml
 
-
   tests:
     runs-on: ubuntu-latest
     needs:
@@ -64,7 +63,6 @@ jobs:
         run: |
           go test -cover ./... -v
 
-
   build:
     runs-on: ubuntu-latest
     needs:
@@ -81,8 +79,7 @@ jobs:
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o my-app ./app/main.go
 
-
-  security_scan:
+  trivy:
     runs-on: ubuntu-latest
     needs:
       - build
