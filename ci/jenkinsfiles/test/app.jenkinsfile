@@ -5,30 +5,24 @@ pipeline {
     options { timestamps() }
 
     stages {
-        stage('Vet') {
+        stage('Go version') {
             steps {
                 echo "Go version..."
-                sh """
-                go version
-                """
+                sh 'go version'
             }
         }
 
         stage('Vet') {
             steps {
                 echo "Running go vet..."
-                sh """
-                go vet ./...
-                """
+                sh 'go vet ./...'
             }
         }
 
         stage('Lint') {
             steps {
                 echo "Running golangci-lint..."
-                sh """
-                golangci-lint run ./... -v --config .golangci.yml
-                """
+                sh 'golangci-lint run ./... -v --config .golangci.yml'
             }
         }
 
