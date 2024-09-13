@@ -5,7 +5,10 @@ pipeline {
     options { timestamps() }
 
     environment {
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
         DOCKER_IMAGE = 'binarybun/devops-app'
+        ACTIVE_CONTAINER = ''
+        NEW_CONTAINER = ''
     }
 
     stages {
@@ -92,7 +95,7 @@ pipeline {
 
                     echo "Pushing Docker image ${imageTag} to Docker Hub"
 
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh """
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                             docker push ${imageTag}
@@ -109,6 +112,65 @@ pipeline {
                     def imageTag = "${DOCKER_IMAGE}:${appVersion}"
 
                     sh "docker rmi ${imageTag}"
+                }
+            }
+        }
+
+        stage('Determine Active Container') {
+            steps {
+                script {
+                    def result = sh(script: "docker ps --filter 'name=app_blue' --format '{{.ID}}'", returnStdout: true).trim()
+                    ACTIVE_CONTAINER = result ? 'app_blue' : 'app_green'
+                    echo "Active container: ${ACTIVE_CONTAINER}"
+                }
+            }
+        }
+
+        stage('Start New Container') {
+            steps {
+                script {
+                    NEW_CONTAINER = (ACTIVE_CONTAINER == 'app_blue') ? 'app_green' : 'app_blue'
+                    echo "Starting new container: ${NEW_CONTAINER}"
+
+                    sh """
+                        docker run -d --name ${NEW_CONTAINER} -p 8005:8004 ${DOCKER_IMAGE}
+                    """
+                }
+            }
+        }
+
+        stage('Health Check New Container') {
+            steps {
+                script {
+                    retry(3) {
+                        sleep 5
+                        sh 'curl -f http://localhost:8005 || exit 1'
+                    }
+                    echo "New container is running successfully."
+                }
+            }
+        }
+
+        stage('Switch Nginx to New Version') {
+            steps {
+                script {
+                    sh """
+                        sed -i 's/${ACTIVE_CONTAINER}/${NEW_CONTAINER}/g' /etc/nginx/conf.d/app.conf
+                        nginx -s reload
+                    """
+                    echo "Nginx switched to ${NEW_CONTAINER}"
+                }
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                script {
+                    sh """
+                        docker stop ${ACTIVE_CONTAINER}
+                        docker rm ${ACTIVE_CONTAINER}
+                    """
+                    echo "Old container ${ACTIVE_CONTAINER} stopped and removed."
                 }
             }
         }
