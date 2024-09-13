@@ -60,7 +60,57 @@ pipeline {
                 docker build --build-arg APP_NAME=medicine -f ./ci/dockerfiles/api -t trivy-go-app .
                 trivy image --exit-code 1 --severity CRITICAL,HIGH trivy-go-app
                 """
+
+                sh """
+                docker rmi trivy-go-app:latest
+                """
             }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def imageTag = "${DOCKER_IMAGE}:${appVersion}"
+
+                    echo "Building Docker image with tag ${imageTag}"
+
+                    sh "docker build --build-arg APP_NAME=medicine -f ./ci/dockerfiles/api -t ${imageTag} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def imageTag = "${DOCKER_IMAGE}:${appVersion}"
+
+                    echo "Pushing Docker image ${imageTag} to Docker Hub"
+
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push ${imageTag}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                script {
+                    def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def imageTag = "${DOCKER_IMAGE}:${appVersion}"
+
+                    sh "docker rmi ${imageTag}"
+                }
+            }
+        }
+
+        always {
+            sh "docker logout"
         }
     }
 }
