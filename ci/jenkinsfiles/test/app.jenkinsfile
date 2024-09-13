@@ -1,5 +1,8 @@
 pipeline {
-    agent any
+    agent { label 'test-stand' }
+
+    triggers { pollSCM('* * * * *') }
+    options { timestamps() }
 
     environment {
         GO_VERSION = "1.22"
