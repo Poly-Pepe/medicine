@@ -1,0 +1,70 @@
+pipeline {
+    agent any
+
+    environment {
+        GO_VERSION = "1.22"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Vet') {
+            steps {
+                echo "Running go vet..."
+                sh """
+                go vet ./...
+                """
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                echo "Running golangci-lint..."
+                sh """
+                golangci-lint run ./... -v --config .golangci.yml
+                """
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                echo "Running tests..."
+                sh """
+                go test -cover ./... -v
+                """
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo "Building Go application..."
+                sh """
+                CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o my-app ./app/main.go
+                """
+            }
+        }
+
+        stage('Trivy Scan: File System') {
+            steps {
+                echo "Running Trivy scan on filesystem..."
+                sh """
+                trivy fs --exit-code 1 --severity CRITICAL,HIGH,MEDIUM --no-progress .
+                """
+            }
+        }
+
+        stage('Trivy Scan: Docker Image') {
+            steps {
+                echo "Running Trivy scan on Docker image..."
+                sh """
+                docker build --build-arg APP_NAME=medicine -f ./ci/dockerfiles/api -t trivy-go-app .
+                trivy image --exit-code 1 --severity CRITICAL,HIGH trivy-go-app
+                """
+            }
+        }
+    }
+}
