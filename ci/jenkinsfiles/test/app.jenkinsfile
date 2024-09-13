@@ -1,0 +1,260 @@
+pipeline {
+    agent { label 'test-stand' }
+
+    triggers { pollSCM('* * * * *') }
+    options { timestamps() }
+
+    environment {
+        DATABASE_DSN = 'postgresql://architect:0086478826@192.168.150.139:5444/medecine?sslmode=disable'
+        LOG_LEVEL = 'info'
+
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials-id'
+        DOCKER_IMAGE = 'binarybun/devops-app'
+        ACTIVE_CONTAINER = ''
+        NEW_CONTAINER = ''
+    }
+
+    stages {
+        stage('Go version') {
+            steps {
+                echo "Go version..."
+                sh 'go version'
+            }
+        }
+
+        stage('Vet') {
+            steps {
+                echo "Running go vet..."
+                sh 'go vet ./...'
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                echo "Running golangci-lint..."
+                sh 'golangci-lint run ./... -v --config .golangci.yml'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                echo "Running tests..."
+                sh """
+                go test -cover ./... -v
+                """
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo "Building Go application..."
+                sh """
+                CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o my-app ./app/main.go
+                """
+            }
+        }
+
+        stage('Trivy Scan: File System') {
+            steps {
+                echo "Running Trivy scan on filesystem..."
+                sh """
+                trivy fs --exit-code 1 --severity CRITICAL,HIGH,MEDIUM --no-progress .
+                """
+            }
+        }
+
+        stage('Trivy Scan: Docker Image') {
+            steps {
+                echo "Running Trivy scan on Docker image..."
+                sh """
+                docker build --build-arg APP_NAME=medicine -f ./ci/dockerfiles/api -t trivy-go-app .
+                trivy image --exit-code 1 --severity CRITICAL,HIGH trivy-go-app
+                """
+
+                sh """
+                docker rmi trivy-go-app:latest
+                """
+            }
+        }
+
+        stage('Check if Docker Image Changed') {
+            steps {
+                script {
+                    def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def latestImageTag = "${DOCKER_IMAGE}:latest"
+                    def newImageTag = "${DOCKER_IMAGE}:${appVersion}"
+
+                    echo "Checking if Docker image ${newImageTag} is different from ${latestImageTag} on Docker Hub"
+
+                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        """
+                    }
+
+                    def latestImageExists = sh(script: "docker pull ${latestImageTag} || echo 'not_found'", returnStdout: true).trim()
+
+                    if (latestImageExists.contains('not_found')) {
+                        echo "Latest Docker image does not exist. Proceeding with build..."
+                    } else {
+                        echo "Comparing current image with latest..."
+
+                        sh "docker build --build-arg APP_NAME=medicine -f ./ci/dockerfiles/api -t ${newImageTag} ."
+
+                        def latestImageDigest = sh(script: "docker inspect --format='{{.Id}}' ${latestImageTag}", returnStdout: true).trim()
+                        def newImageDigest = sh(script: "docker inspect --format='{{.Id}}' ${newImageTag}", returnStdout: true).trim()
+
+                        if (latestImageDigest == newImageDigest) {
+                            echo "Current image is the same as the latest. Skipping push."
+                            currentBuild.result = 'SUCCESS'
+                        } else {
+                            echo "Images are different. Proceeding with push."
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            when {
+                expression { currentBuild.result != 'SUCCESS' }
+            }
+            steps {
+                script {
+                    def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def imageTag = "${DOCKER_IMAGE}:${appVersion}"
+
+                    echo "Building Docker image with tag ${imageTag}"
+
+                    sh "docker build --build-arg APP_NAME=medicine -f ./ci/dockerfiles/api -t ${imageTag} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            when {
+                expression { currentBuild.result != 'SUCCESS' }
+            }
+            steps {
+                script {
+                    def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def imageTag = "${DOCKER_IMAGE}:${appVersion}"
+                    def latestTag = "${DOCKER_IMAGE}:latest"
+
+                    echo "Pushing Docker image ${imageTag} to Docker Hub"
+                    echo "Tagging Docker image as ${latestTag}"
+
+                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker tag ${imageTag} ${latestTag}
+                            docker push ${imageTag}
+                            docker push ${latestTag}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                script {
+                    def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def imageTag = "${DOCKER_IMAGE}:${appVersion}"
+
+                    sh "docker rmi ${imageTag}"
+                }
+            }
+        }
+
+        stage('Determine Active Container') {
+            steps {
+                script {
+                    def result = sh(script: "docker ps --filter 'name=app_blue' --format '{{.ID}}'", returnStdout: true).trim()
+                    ACTIVE_CONTAINER = result ? 'app_blue' : 'app_green'
+                    echo "Active container: ${ACTIVE_CONTAINER}"
+                }
+            }
+        }
+
+        stage('Start New Container') {
+            steps {
+                script {
+                    NEW_CONTAINER = (ACTIVE_CONTAINER == 'app_blue') ? 'app_green' : 'app_blue'
+                    def new_port = (NEW_CONTAINER == 'app_blue') ? '8005' : '8004'
+                    echo "Starting new container: ${NEW_CONTAINER} on port ${new_port}"
+
+                    sh """
+                        docker pull ${DOCKER_IMAGE}:latest
+                        docker run -d --name ${NEW_CONTAINER} \
+                            -e DATABASE_DSN='${env.DATABASE_DSN}' \
+                            -e LOG_LEVEL=${env.LOG_LEVEL} \
+                            -p ${new_port}:8004 ${DOCKER_IMAGE}
+                    """
+                }
+            }
+        }
+
+        stage('Health Check New Container') {
+            steps {
+                script {
+                    def new_port = (NEW_CONTAINER == 'app_blue') ? '8005' : '8004'
+                    retry(3) {
+                        sleep 5
+                        sh "curl -f http://localhost:${new_port} || exit 1"
+                    }
+                    echo "New container ${NEW_CONTAINER} is running successfully on port ${new_port}."
+                }
+            }
+        }
+
+        stage('Switch Nginx to New Version') {
+            steps {
+                script {
+                    def container_port = (NEW_CONTAINER == 'app_blue') ? '8005' : '8004'
+
+                    sh """
+                        sudo sed -i 's|server localhost:.*;|server localhost:${container_port};|' /etc/nginx/sites-available/default
+                        sudo nginx -s reload
+                    """
+                    echo "Nginx switched to new container on port ${container_port}."
+                }
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                script {
+                    def containerExists = sh(script: "docker ps -a -q -f name=${ACTIVE_CONTAINER}", returnStdout: true).trim()
+
+                    if (containerExists) {
+                        echo "Stopping and removing old container: ${ACTIVE_CONTAINER}"
+                        sh """
+                            docker stop ${ACTIVE_CONTAINER}
+                            docker rm ${ACTIVE_CONTAINER}
+                        """
+                        echo "Old container ${ACTIVE_CONTAINER} stopped and removed."
+                    } else {
+                        echo "No container found with the name: ${ACTIVE_CONTAINER}"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker logout"
+        }
+
+        failure {
+            script {
+               sh """
+                   docker stop ${NEW_CONTAINER}
+                   docker rm ${NEW_CONTAINER}
+               """
+               echo "New container ${NEW_CONTAINER} stopped and removed."
+            }
+        }
+    }
+}
