@@ -74,32 +74,44 @@ pipeline {
             }
         }
 
-        stage('Check if Docker Image Exists') {
-            steps {
-                script {
-                    def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    def imageTag = "${DOCKER_IMAGE}:${appVersion}"
+        stage('Check if Docker Image Changed') {
+                    steps {
+                        script {
+                            def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                            def latestImageTag = "${DOCKER_IMAGE}:latest"
+                            def newImageTag = "${DOCKER_IMAGE}:${appVersion}"
 
-                    echo "Checking if Docker image ${imageTag} exists on Docker Hub"
+                            echo "Checking if Docker image ${newImageTag} is different from ${latestImageTag} on Docker Hub"
 
-                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh """
-                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        """
-                    }
+                            withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                                sh """
+                                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                                """
+                            }
 
-                    def imageExists = sh(script: "docker pull ${imageTag} || echo 'not_found'", returnStdout: true).trim()
+                            def latestImageExists = sh(script: "docker pull ${latestImageTag} || echo 'not_found'", returnStdout: true).trim()
 
-                    if (imageExists.contains('not_found')) {
-                        echo "Docker image ${imageTag} does not exist. Proceeding with build..."
-                    } else {
-                        echo "Docker image ${imageTag} already exists. Skipping build and push."
-                        currentBuild.result = 'SUCCESS'
-                        error("Image ${imageTag} already exists, stopping further pipeline execution.")
+                            if (latestImageExists.contains('not_found')) {
+                                echo "Latest Docker image does not exist. Proceeding with build..."
+                            } else {
+                                echo "Comparing current image with latest..."
+
+                                sh "docker build --build-arg APP_NAME=medicine -f ./ci/dockerfiles/api -t ${newImageTag} ."
+
+                                def latestImageDigest = sh(script: "docker inspect --format='{{.Id}}' ${latestImageTag}", returnStdout: true).trim()
+                                def newImageDigest = sh(script: "docker inspect --format='{{.Id}}' ${newImageTag}", returnStdout: true).trim()
+
+                                if (latestImageDigest == newImageDigest) {
+                                    echo "Current image is the same as the latest. Skipping push."
+                                    currentBuild.result = 'SUCCESS'
+                                    error("Image ${newImageTag} is the same as ${latestImageTag}, stopping further pipeline execution.")
+                                } else {
+                                    echo "Images are different. Proceeding with push."
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        }
 
         stage('Build Docker Image') {
             when {
