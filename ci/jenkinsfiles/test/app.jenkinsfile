@@ -74,7 +74,37 @@ pipeline {
             }
         }
 
+        stage('Check if Docker Image Exists') {
+            steps {
+                script {
+                    def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def imageTag = "${DOCKER_IMAGE}:${appVersion}"
+
+                    echo "Checking if Docker image ${imageTag} exists on Docker Hub"
+
+                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        """
+                    }
+
+                    def imageExists = sh(script: "docker pull ${imageTag} || echo 'not_found'", returnStdout: true).trim()
+
+                    if (imageExists.contains('not_found')) {
+                        echo "Docker image ${imageTag} does not exist. Proceeding with build..."
+                    } else {
+                        echo "Docker image ${imageTag} already exists. Skipping build and push."
+                        currentBuild.result = 'SUCCESS'
+                        error("Image ${imageTag} already exists, stopping further pipeline execution.")
+                    }
+                }
+            }
+        }
+
         stage('Build Docker Image') {
+            when {
+                expression { currentBuild.result != 'SUCCESS' }
+            }
             steps {
                 script {
                     def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
@@ -88,6 +118,9 @@ pipeline {
         }
 
         stage('Push Docker Image') {
+            when {
+                expression { currentBuild.result != 'SUCCESS' }
+            }
             steps {
                 script {
                     def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
