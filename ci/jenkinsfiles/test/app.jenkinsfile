@@ -137,13 +137,17 @@ pipeline {
                 script {
                     def appVersion = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     def imageTag = "${DOCKER_IMAGE}:${appVersion}"
+                    def latestTag = "${DOCKER_IMAGE}:latest"
 
                     echo "Pushing Docker image ${imageTag} to Docker Hub"
+                    echo "Tagging Docker image as ${latestTag}"
 
                     withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh """
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker tag ${imageTag} ${latestTag}
                             docker push ${imageTag}
+                            docker push ${latestTag}
                         """
                     }
                 }
