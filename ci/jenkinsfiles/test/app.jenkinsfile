@@ -104,7 +104,6 @@ pipeline {
                         if (latestImageDigest == newImageDigest) {
                             echo "Current image is the same as the latest. Skipping push."
                             currentBuild.result = 'SUCCESS'
-                            error("Image ${newImageTag} is the same as ${latestImageTag}, stopping further pipeline execution.")
                         } else {
                             echo "Images are different. Proceeding with push."
                         }
