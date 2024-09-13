@@ -5,7 +5,7 @@ pipeline {
     options { timestamps() }
 
     environment {
-        DOCKER_IMAGE = 'golang-app'
+        DOCKER_IMAGE = 'binarybun/devops-app'
     }
 
     stages {
