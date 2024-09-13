@@ -178,6 +178,7 @@ pipeline {
                     echo "Starting new container: ${NEW_CONTAINER}"
 
                     sh """
+                        docker pull ${DOCKER_IMAGE}:latest
                         docker run -d --name ${NEW_CONTAINER} -p 8005:8004 ${DOCKER_IMAGE}
                     """
                 }
