@@ -4,6 +4,10 @@ pipeline {
     triggers { pollSCM('* * * * *') }
     options { timestamps() }
 
+    environment {
+        DOCKER_IMAGE = 'golang-app'
+    }
+
     stages {
         stage('Go version') {
             steps {
