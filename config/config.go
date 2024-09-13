@@ -10,7 +10,7 @@ import (
 type Config struct {
 	AppPort     int    `env:"APP_PORT" envDefault:"8004"`
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"info"`
-	DataBaseDNS string `env:"DATABASE_DSN" envDefault:"postgresql://architect:09970207@192.168.150.139:5444/medecine?sslmode=disable"`
+	DataBaseDNS string `env:"DATABASE_DSN" envDefault:"postgresql://architect:68604424447@192.168.150.139:5444/medecine?sslmode=disable"`
 }
 
 func NewConfig() (*Config, error) {
