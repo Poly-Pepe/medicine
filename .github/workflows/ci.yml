@@ -3,10 +3,7 @@ name: Go App
 on:
   push:
     branches:
-      - 'master'
-  pull_request:
-    branches:
-      - 'master'
+      - 'feature/*'
 
 jobs:
   vet:
