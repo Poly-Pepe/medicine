@@ -6,7 +6,6 @@ import (
 
 //todo: это конфиги для теста
 
-//nolint:lll //envDefault.
 type Config struct {
 	AppPort     int    `env:"APP_PORT" envDefault:"8004"`
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"info"`
