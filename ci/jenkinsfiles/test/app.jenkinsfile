@@ -219,11 +219,18 @@ pipeline {
         stage('Stop Old Container') {
             steps {
                 script {
-                    sh """
-                        docker stop ${ACTIVE_CONTAINER}
-                        docker rm ${ACTIVE_CONTAINER}
-                    """
-                    echo "Old container ${ACTIVE_CONTAINER} stopped and removed."
+                    def containerExists = sh(script: "docker ps -a -q -f name=${ACTIVE_CONTAINER}", returnStdout: true).trim()
+
+                    if (containerExists) {
+                        echo "Stopping and removing old container: ${ACTIVE_CONTAINER}"
+                        sh """
+                            docker stop ${ACTIVE_CONTAINER}
+                            docker rm ${ACTIVE_CONTAINER}
+                        """
+                        echo "Old container ${ACTIVE_CONTAINER} stopped and removed."
+                    } else {
+                        echo "No container found with the name: ${ACTIVE_CONTAINER}"
+                    }
                 }
             }
         }
@@ -232,6 +239,16 @@ pipeline {
     post {
         always {
             sh "docker logout"
+        }
+
+        failure {
+            script {
+               sh """
+                   docker stop ${NEW_CONTAINER}
+                   docker rm ${NEW_CONTAINER}
+               """
+               echo "New container ${NEW_CONTAINER} stopped and removed."
+            }
         }
     }
 }
