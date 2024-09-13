@@ -4,11 +4,16 @@ pipeline {
     triggers { pollSCM('* * * * *') }
     options { timestamps() }
 
-    environment {
-        GO_VERSION = "1.22"
-    }
-
     stages {
+        stage('Vet') {
+            steps {
+                echo "Go version..."
+                sh """
+                go version
+                """
+            }
+        }
+
         stage('Vet') {
             steps {
                 echo "Running go vet..."
