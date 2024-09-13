@@ -5,7 +5,7 @@ pipeline {
     options { timestamps() }
 
     environment {
-        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials'
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials-id'
         DOCKER_IMAGE = 'binarybun/devops-app'
         ACTIVE_CONTAINER = ''
         NEW_CONTAINER = ''
