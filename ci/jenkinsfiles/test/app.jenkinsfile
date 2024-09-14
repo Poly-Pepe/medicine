@@ -5,7 +5,7 @@ pipeline {
     options { timestamps() }
 
     environment {
-        DATABASE_DSN = 'postgresql://architect:0086478826@192.168.150.139:5444/medecine?sslmode=disable'
+        DATABASE_DSN = 'postgresql://architect:470284448@192.168.150.139:5444/medecine?sslmode=disable'
         LOG_LEVEL = 'info'
 
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials-id'
